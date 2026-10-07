@@ -1,0 +1,2822 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Prepa UG Salamanca 3D</title>
+
+<style>
+
+*{
+    box-sizing:border-box;
+}
+
+html,
+body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    font-family:Arial,Helvetica,sans-serif;
+    background:#151515;
+}
+
+canvas{
+    display:block;
+}
+
+#loading{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#dfe5e8;
+    color:#263238;
+    font-size:22px;
+    font-weight:bold;
+}
+
+#titleBox{
+    position:fixed;
+    z-index:10;
+    top:18px;
+    left:18px;
+    width:320px;
+    padding:18px;
+    background:rgba(255,255,255,.94);
+    border-radius:15px;
+    box-shadow:0 8px 30px rgba(0,0,0,.25);
+}
+
+#titleBox h1{
+    margin:0 0 8px 0;
+    font-size:21px;
+}
+
+#titleBox p{
+    margin:5px 0;
+    color:#555;
+    font-size:13px;
+    line-height:1.4;
+}
+
+#buttons{
+    margin-top:12px;
+}
+
+button{
+    border:0;
+    border-radius:8px;
+    padding:9px 12px;
+    margin:3px;
+    background:#263238;
+    color:white;
+    cursor:pointer;
+    font-size:13px;
+}
+
+button:hover{
+    background:#455a64;
+}
+
+/* ============================================================
+   PANEL DE INFORMACIÓN
+   ============================================================ */
+
+#information{
+    display:none;
+    position:fixed;
+    z-index:20;
+    top:18px;
+    right:18px;
+    width:330px;
+    max-height:calc(100vh - 36px);
+    overflow-y:auto;
+    padding:18px;
+    background:rgba(255,255,255,.97);
+    border-radius:15px;
+    box-shadow:0 8px 30px rgba(0,0,0,.28);
+}
+
+#information h2{
+    margin:0 0 8px;
+    font-size:20px;
+}
+
+#information h3{
+    margin:15px 0 5px;
+    font-size:14px;
+    color:#263238;
+}
+
+#information p{
+    margin:7px 0;
+    color:#444;
+    line-height:1.45;
+    font-size:14px;
+}
+
+#information .tipo{
+    display:inline-block;
+    padding:5px 9px;
+    border-radius:20px;
+    background:#e8f5e9;
+    color:#2e7d32;
+    font-size:12px;
+    font-weight:bold;
+    margin-bottom:8px;
+}
+
+/* ============================================================
+   INFOGRAFÍA DE ÁRBOLES
+   ============================================================ */
+
+.treeInfographic{
+    margin-top:12px;
+    padding:12px;
+    background:#f1f8f3;
+    border-radius:12px;
+    border:1px solid #d5e7d8;
+}
+
+.treeScientific{
+    font-size:13px;
+    color:#47704b;
+    font-style:italic;
+    margin-bottom:9px;
+}
+
+.treeGrid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+}
+
+.treeCard{
+    background:white;
+    border-radius:9px;
+    padding:8px;
+    border:1px solid #e2e2e2;
+}
+
+.treeCard b{
+    display:block;
+    font-size:11px;
+    color:#2e7d32;
+    margin-bottom:4px;
+}
+
+.treeCard span{
+    display:block;
+    font-size:12px;
+    color:#444;
+    line-height:1.3;
+}
+
+#help{
+    position:fixed;
+    z-index:10;
+    bottom:18px;
+    left:18px;
+    background:rgba(255,255,255,.9);
+    padding:10px 14px;
+    border-radius:10px;
+    font-size:12px;
+    color:#444;
+}
+
+</style>
+
+<script type="importmap">
+{
+    "imports":{
+        "three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+}
+</script>
+
+</head>
+
+<body>
+
+<div id="loading">
+    Cargando maqueta de la Prepa UG Salamanca...
+</div>
+
+
+<div id="titleBox">
+
+    <h1>🏫 Prepa UG Salamanca</h1>
+
+    <p>
+        Escuela de Nivel Medio Superior de Salamanca
+    </p>
+
+    <p>
+        <b>Unidad I — modelo 3D</b>
+    </p>
+
+    <div id="buttons">
+
+        <button onclick="vistaAerea()">
+            Vista aérea
+        </button>
+
+        <button onclick="vistaFrontal()">
+            Vista 3D
+        </button>
+
+        <button onclick="vistaArriba()">
+            Vista superior
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     PANEL INTERACTIVO
+     ============================================================ -->
+
+<div id="information">
+
+    <div id="infoType" class="tipo">
+        Edificio
+    </div>
+
+    <h2 id="infoTitle">
+        Edificio
+    </h2>
+
+    <p id="infoText">
+        Información.
+    </p>
+
+    <div id="infoExtra"></div>
+
+    <button onclick="cerrarInformacion()">
+        Cerrar
+    </button>
+
+</div>
+
+
+<div id="help">
+    🖱️ Arrastra para girar · Rueda para acercar/alejar · Haz clic en un edificio o árbol
+</div>
+
+
+<script type="module">
+
+import * as THREE from "three";
+
+import {
+    OrbitControls
+}
+from "three/addons/controls/OrbitControls.js";
+
+
+// ============================================================
+// ESCENA
+// ============================================================
+
+const scene =
+    new THREE.Scene();
+
+scene.background =
+    new THREE.Color(0xc7cdd0);
+
+
+// ============================================================
+// CÁMARA
+// ============================================================
+
+const camera =
+    new THREE.PerspectiveCamera(
+        48,
+        window.innerWidth /
+        window.innerHeight,
+        .1,
+        1000
+    );
+
+camera.position.set(
+    75,
+    80,
+    95
+);
+
+
+// ============================================================
+// RENDER
+// ============================================================
+
+const renderer =
+    new THREE.WebGLRenderer({
+        antialias:true
+    });
+
+renderer.setSize(
+    window.innerWidth,
+    window.innerHeight
+);
+
+renderer.setPixelRatio(
+    Math.min(
+        window.devicePixelRatio,
+        1.7
+    )
+);
+
+renderer.shadowMap.enabled = true;
+
+renderer.shadowMap.type =
+    THREE.PCFSoftShadowMap;
+
+document.body.appendChild(
+    renderer.domElement
+);
+
+
+// ============================================================
+// CONTROLES
+// ============================================================
+
+const controls =
+    new OrbitControls(
+        camera,
+        renderer.domElement
+    );
+
+controls.enableDamping = true;
+
+controls.dampingFactor = .055;
+
+controls.minDistance = 20;
+
+controls.maxDistance = 170;
+
+controls.maxPolarAngle =
+    Math.PI / 2.05;
+
+controls.target.set(
+    -25,
+    0,
+    5
+);
+
+
+// ============================================================
+// ILUMINACIÓN
+// ============================================================
+
+const hemi =
+    new THREE.HemisphereLight(
+        0xffffff,
+        0x737373,
+        2.1
+    );
+
+scene.add(hemi);
+
+
+const sun =
+    new THREE.DirectionalLight(
+        0xffffff,
+        2.7
+    );
+
+sun.position.set(
+    -60,
+    120,
+    70
+);
+
+sun.castShadow = true;
+
+sun.shadow.mapSize.width = 2048;
+sun.shadow.mapSize.height = 2048;
+
+sun.shadow.camera.left = -100;
+sun.shadow.camera.right = 100;
+sun.shadow.camera.top = 100;
+sun.shadow.camera.bottom = -100;
+
+scene.add(sun);
+
+
+// ============================================================
+// TERRENO
+// ============================================================
+
+const terrenoGeo =
+    new THREE.BoxGeometry(
+        106,
+        1,
+        104
+    );
+
+const terrenoMat =
+    new THREE.MeshStandardMaterial({
+        color:0xd7d7d7,
+        roughness:.95
+    });
+
+const terreno =
+    new THREE.Mesh(
+        terrenoGeo,
+        terrenoMat
+    );
+
+terreno.position.set(
+    -27,
+    -.5,
+    5
+);
+
+terreno.receiveShadow = true;
+
+scene.add(terreno);
+
+
+// ============================================================
+// GRUPOS
+// ============================================================
+
+const edificios = [];
+
+const arboles = [];
+
+
+// ============================================================
+// FUNCIÓN PRINCIPAL DE EDIFICIO
+// ============================================================
+
+function crearEdificio(opciones){
+
+    const {
+
+        nombre,
+        descripcion,
+
+        x,
+        z,
+
+        ancho,
+        fondo,
+
+        altura,
+
+        niveles = 1,
+
+        color = 0xe5e5e5,
+
+        ventanas = true,
+
+        fachada = true
+
+    } = opciones;
+
+
+    const grupo =
+        new THREE.Group();
+
+
+    grupo.position.set(
+        x,
+        0,
+        z
+    );
+
+
+    grupo.userData.nombre =
+        nombre;
+
+    grupo.userData.descripcion =
+        descripcion;
+
+    grupo.userData.tipo =
+        "Edificio";
+
+
+    // --------------------------------------------------------
+    // CUERPO
+    // --------------------------------------------------------
+
+    const cuerpoGeo =
+        new THREE.BoxGeometry(
+            ancho,
+            altura,
+            fondo
+        );
+
+    const cuerpoMat =
+        new THREE.MeshStandardMaterial({
+            color:color,
+            roughness:.8
+        });
+
+    const cuerpo =
+        new THREE.Mesh(
+            cuerpoGeo,
+            cuerpoMat
+        );
+
+    cuerpo.position.y =
+        altura / 2;
+
+    cuerpo.castShadow = true;
+    cuerpo.receiveShadow = true;
+
+    grupo.add(cuerpo);
+
+
+    // --------------------------------------------------------
+    // ZONAS DE PISO
+    // --------------------------------------------------------
+
+    if(niveles > 1){
+
+        for(
+            let i=1;
+            i<niveles;
+            i++
+        ){
+
+            const y =
+                altura *
+                (i/niveles);
+
+
+            const lineaGeo =
+                new THREE.BoxGeometry(
+                    ancho + .08,
+                    .12,
+                    fondo + .08
+                );
+
+            const lineaMat =
+                new THREE.MeshStandardMaterial({
+                    color:0xb8b8b8
+                });
+
+            const linea =
+                new THREE.Mesh(
+                    lineaGeo,
+                    lineaMat
+                );
+
+            linea.position.y = y;
+
+            linea.castShadow = true;
+
+            grupo.add(linea);
+        }
+    }
+
+
+    // --------------------------------------------------------
+    // TECHO
+    // --------------------------------------------------------
+
+    const techoGeo =
+        new THREE.BoxGeometry(
+            ancho + .3,
+            .25,
+            fondo + .3
+        );
+
+    const techoMat =
+        new THREE.MeshStandardMaterial({
+            color:0xd4d4d4,
+            roughness:.85
+        });
+
+    const techo =
+        new THREE.Mesh(
+            techoGeo,
+            techoMat
+        );
+
+    techo.position.y =
+        altura + .12;
+
+    techo.castShadow = true;
+
+    grupo.add(techo);
+
+
+    // --------------------------------------------------------
+    // FACHADA
+    // --------------------------------------------------------
+
+    if(fachada){
+
+        const fachadaGeo =
+            new THREE.BoxGeometry(
+                ancho * .72,
+                Math.min(
+                    2.7,
+                    altura*.40
+                ),
+                .14
+            );
+
+        const fachadaMat =
+            new THREE.MeshStandardMaterial({
+                color:0xf1f1f1
+            });
+
+        const fachadaObj =
+            new THREE.Mesh(
+                fachadaGeo,
+                fachadaMat
+            );
+
+        fachadaObj.position.set(
+            0,
+            Math.min(
+                2.7,
+                altura*.40
+            ) / 2 + .25,
+            fondo/2 + .08
+        );
+
+        grupo.add(
+            fachadaObj
+        );
+    }
+
+
+    // --------------------------------------------------------
+    // VENTANAS
+    // --------------------------------------------------------
+
+    if(ventanas){
+
+        const numeroVentanas =
+            Math.max(
+                3,
+                Math.floor(
+                    ancho / 4
+                )
+            );
+
+
+        for(
+            let i=0;
+            i<numeroVentanas;
+            i++
+        ){
+
+            const ventanaGeo =
+                new THREE.BoxGeometry(
+                    1.5,
+                    1.45,
+                    .08
+                );
+
+            const ventanaMat =
+                new THREE.MeshStandardMaterial({
+                    color:0x91aab5,
+                    roughness:.3,
+                    metalness:.05
+                });
+
+            const ventana =
+                new THREE.Mesh(
+                    ventanaGeo,
+                    ventanaMat
+                );
+
+
+            const separacion =
+                ancho /
+                (numeroVentanas + 1);
+
+            ventana.position.x =
+                -ancho/2 +
+                separacion *
+                (i+1);
+
+            ventana.position.y =
+                Math.min(
+                    altura-.9,
+                    Math.max(
+                        2,
+                        altura*.57
+                    )
+                );
+
+            ventana.position.z =
+                fondo/2 + .15;
+
+            grupo.add(
+                ventana
+            );
+        }
+    }
+
+
+    // --------------------------------------------------------
+    // PUERTA
+    // --------------------------------------------------------
+
+    const puertaGeo =
+        new THREE.BoxGeometry(
+            1.9,
+            2.8,
+            .10
+        );
+
+    const puertaMat =
+        new THREE.MeshStandardMaterial({
+            color:0x4b5960,
+            roughness:.5
+        });
+
+    const puerta =
+        new THREE.Mesh(
+            puertaGeo,
+            puertaMat
+        );
+
+    puerta.position.set(
+        0,
+        1.4,
+        fondo/2 + .16
+    );
+
+    grupo.add(
+        puerta
+    );
+
+
+    // --------------------------------------------------------
+    // ESCALERA
+    // --------------------------------------------------------
+
+    if(
+        niveles > 1 &&
+        ancho > 15
+    ){
+
+        const escaleraGrupo =
+            new THREE.Group();
+
+
+        for(
+            let i=0;
+            i<6;
+            i++
+        ){
+
+            const escalonGeo =
+                new THREE.BoxGeometry(
+                    3.4,
+                    .25,
+                    .55
+                );
+
+            const escalonMat =
+                new THREE.MeshStandardMaterial({
+                    color:0xbdbdbd
+                });
+
+            const escalon =
+                new THREE.Mesh(
+                    escalonGeo,
+                    escalonMat
+                );
+
+            escalon.position.set(
+                ancho*.28,
+                .125 + i*.22,
+                fondo/2 +
+                .55 +
+                i*.42
+            );
+
+            escalon.castShadow = true;
+
+            escaleraGrupo.add(
+                escalon
+            );
+        }
+
+        grupo.add(
+            escaleraGrupo
+        );
+    }
+
+
+    scene.add(
+        grupo
+    );
+
+    edificios.push(
+        grupo
+    );
+
+    return grupo;
+}
+
+
+// ============================================================
+// EDIFICIOS
+// ============================================================
+
+// GIMNASIO
+
+crearEdificio({
+
+    nombre:
+        "Gimnasio",
+
+    descripcion:
+        "Gimnasio de la Unidad I de la ENMS Salamanca.",
+
+    x:-34,
+    z:-32,
+
+    ancho:22,
+    fondo:20,
+
+    altura:7.5,
+
+    niveles:1,
+
+    color:0xd8d8d8,
+
+    ventanas:false
+
+});
+
+
+// BIBLIOTECA
+
+crearEdificio({
+
+    nombre:
+        "Biblioteca",
+
+    descripcion:
+        "Biblioteca de la ENMS Salamanca.",
+
+    x:-7,
+    z:-32,
+
+    ancho:23,
+    fondo:13,
+
+    altura:5.4,
+
+    niveles:1,
+
+    color:0xe4e4e4,
+
+    ventanas:true
+
+});
+
+
+// E1
+
+crearEdificio({
+
+    nombre:
+        "Edificio 1",
+
+    descripcion:
+        "Edificio academico 1.",
+
+    x:-8,
+    z:-14,
+
+    ancho:22,
+    fondo:14,
+
+    altura:7.8,
+
+    niveles:2,
+
+    color:0xe1e1e1,
+
+    ventanas:true
+
+});
+
+
+// EP
+
+crearEdificio({
+
+    nombre:
+        "Edificio Principal",
+
+    descripcion:
+        "Edificio principal de la Unidad I.",
+
+    x:-27,
+    z:6,
+
+    ancho:48,
+    fondo:16,
+
+    altura:8.2,
+
+    niveles:2,
+
+    color:0xe2e2e2,
+
+    ventanas:true
+
+});
+
+
+// AULA MAGNA
+
+crearEdificio({
+
+    nombre:
+        "Aula Magna",
+
+    descripcion:
+        "Aula Magna de la Unidad I de la ENMS Salamanca.",
+
+    x:-37,
+    z:43,
+
+    ancho:28,
+    fondo:25,
+
+    altura:6.4,
+
+    niveles:1,
+
+    color:0xd6d6d6,
+
+    ventanas:false
+
+});
+
+
+// PREFECTURA
+
+crearEdificio({
+
+    nombre:
+        "Prefectura",
+
+    descripcion:
+        "Área de Prefectura de la Escuela de Nivel Medio Superior de Salamanca.",
+
+    x:-10,
+    z:43,
+
+    ancho:14,
+    fondo:12,
+
+    altura:5.8,
+
+    niveles:1,
+
+    color:0xd9d9d9,
+
+    ventanas:true
+
+});
+
+
+// DIRECCIÓN
+
+crearEdificio({
+
+    nombre:
+        "Dirección",
+
+    descripcion:
+        "Edificio de Dirección de la Escuela de Nivel Medio Superior de Salamanca.",
+
+    x:-10,
+    z:27,
+
+    ancho:14,
+    fondo:10,
+
+    altura:11.5,
+
+    niveles:3,
+
+    color:0xdcdcdc,
+
+    ventanas:true
+
+});
+
+
+// ============================================================
+// FUNCIONES AUXILIARES PARA ÁRBOLES
+// ============================================================
+
+function crearRama(
+    grupo,
+    x,
+    y,
+    z,
+    largo,
+    grosor,
+    rotX = 0,
+    rotZ = 0,
+    color = 0x765438
+){
+
+    const geo =
+        new THREE.CylinderGeometry(
+            grosor*.75,
+            grosor,
+            largo,
+            6
+        );
+
+    const mat =
+        new THREE.MeshStandardMaterial({
+            color:color,
+            roughness:.9
+        });
+
+    const rama =
+        new THREE.Mesh(
+            geo,
+            mat
+        );
+
+    rama.position.set(
+        x,
+        y,
+        z
+    );
+
+    rama.rotation.x =
+        rotX;
+
+    rama.rotation.z =
+        rotZ;
+
+    rama.castShadow = true;
+
+    grupo.add(
+        rama
+    );
+
+    return rama;
+}
+
+
+// ============================================================
+// GUAYABERO
+// ============================================================
+
+function crearGuayabero(grupo){
+
+    const troncoGeo =
+        new THREE.CylinderGeometry(
+            .30,
+            .43,
+            3.8,
+            8
+        );
+
+    const troncoMat =
+        new THREE.MeshStandardMaterial({
+            color:0x765438,
+            roughness:.9
+        });
+
+    const tronco =
+        new THREE.Mesh(
+            troncoGeo,
+            troncoMat
+        );
+
+    tronco.position.y =
+        1.9;
+
+    tronco.castShadow = true;
+
+    grupo.add(tronco);
+
+
+    crearRama(
+        grupo,
+        -.65,
+        3.1,
+        0,
+        2.0,
+        .14,
+        0,
+        -.55
+    );
+
+    crearRama(
+        grupo,
+        .65,
+        3.2,
+        .1,
+        2.1,
+        .14,
+        0,
+        .55
+    );
+
+    crearRama(
+        grupo,
+        0,
+        3.5,
+        .55,
+        1.8,
+        .13,
+        .45,
+        0
+    );
+
+
+    const colores = [
+        0x4c8b42,
+        0x5a9749,
+        0x3f7d3a
+    ];
+
+
+    const posiciones = [
+
+        [-1.15,4.0,0],
+        [1.1,4.05,.1],
+        [0,4.65,.4],
+        [-.45,4.8,-.6],
+        [.7,4.7,-.55]
+
+    ];
+
+
+    posiciones.forEach(
+        (p,i)=>{
+
+            const geo =
+                new THREE.SphereGeometry(
+                    1.45,
+                    8,
+                    6
+                );
+
+            const mat =
+                new THREE.MeshStandardMaterial({
+                    color:colores[i%colores.length],
+                    roughness:.95
+                });
+
+            const copa =
+                new THREE.Mesh(
+                    geo,
+                    mat
+                );
+
+            copa.position.set(
+                p[0],
+                p[1],
+                p[2]
+            );
+
+            copa.scale.set(
+                1.05,
+                .9,
+                1
+            );
+
+            copa.castShadow = true;
+
+            grupo.add(copa);
+        }
+    );
+
+
+    // GUAYABAS
+
+    const posicionesFrutos = [
+
+        [-1.15,4.75,.5],
+        [.95,4.35,.65],
+        [.2,5.2,-.5],
+        [-.7,4.25,-.8],
+        [1.15,4.8,-.2]
+
+    ];
+
+
+    posicionesFrutos.forEach(
+        p=>{
+
+            const geo =
+                new THREE.SphereGeometry(
+                    .18,
+                    7,
+                    5
+                );
+
+            const mat =
+                new THREE.MeshStandardMaterial({
+                    color:0xd6d875,
+                    roughness:.8
+                });
+
+            const fruto =
+                new THREE.Mesh(
+                    geo,
+                    mat
+                );
+
+            fruto.position.set(
+                p[0],
+                p[1],
+                p[2]
+            );
+
+            grupo.add(fruto);
+        }
+    );
+
+}
+
+
+// ============================================================
+// EUCALIPTO
+// ============================================================
+
+function crearEucalipto(grupo){
+
+    const troncoGeo =
+        new THREE.CylinderGeometry(
+            .24,
+            .36,
+            7.5,
+            8
+        );
+
+    const troncoMat =
+        new THREE.MeshStandardMaterial({
+            color:0x706653,
+            roughness:.9
+        });
+
+    const tronco =
+        new THREE.Mesh(
+            troncoGeo,
+            troncoMat
+        );
+
+    tronco.position.y =
+        3.75;
+
+    tronco.castShadow = true;
+
+    grupo.add(tronco);
+
+
+    crearRama(
+        grupo,
+        -.5,
+        5.1,
+        0,
+        2,
+        .10,
+        0,
+        -.5
+    );
+
+    crearRama(
+        grupo,
+        .5,
+        5.8,
+        0,
+        2,
+        .10,
+        0,
+        .5
+    );
+
+    crearRama(
+        grupo,
+        -.4,
+        6.6,
+        .1,
+        1.7,
+        .09,
+        0,
+        -.5
+    );
+
+
+    const posiciones = [
+
+        [0,5.3,0],
+        [-.7,5.8,0],
+        [.7,6.0,.1],
+        [-.55,6.7,.1],
+        [.55,6.9,0],
+        [0,7.5,.1],
+        [0,8.25,0]
+
+    ];
+
+
+    posiciones.forEach(
+        (p,i)=>{
+
+            const geo =
+                new THREE.SphereGeometry(
+                    .95,
+                    7,
+                    5
+                );
+
+            const mat =
+                new THREE.MeshStandardMaterial({
+                    color:
+                        i%2===0
+                        ? 0x688b73
+                        : 0x78977f,
+                    roughness:.95
+                });
+
+            const hoja =
+                new THREE.Mesh(
+                    geo,
+                    mat
+                );
+
+            hoja.position.set(
+                p[0],
+                p[1],
+                p[2]
+            );
+
+            hoja.scale.set(
+                .72,
+                1.25,
+                .72
+            );
+
+            hoja.castShadow = true;
+
+            grupo.add(hoja);
+        }
+    );
+
+}
+
+
+// ============================================================
+// FICUS VARIEGADO
+// ============================================================
+
+function crearFicusVariegado(grupo){
+
+    const troncoGeo =
+        new THREE.CylinderGeometry(
+            .30,
+            .45,
+            3.7,
+            8
+        );
+
+    const troncoMat =
+        new THREE.MeshStandardMaterial({
+            color:0x765438,
+            roughness:.9
+        });
+
+    const tronco =
+        new THREE.Mesh(
+            troncoGeo,
+            troncoMat
+        );
+
+    tronco.position.y =
+        1.85;
+
+    tronco.castShadow = true;
+
+    grupo.add(tronco);
+
+
+    crearRama(
+        grupo,
+        -.65,
+        3.0,
+        0,
+        2,
+        .13,
+        0,
+        -.55
+    );
+
+    crearRama(
+        grupo,
+        .65,
+        3.15,
+        0,
+        2,
+        .13,
+        0,
+        .55
+    );
+
+
+    // BASE AMARILLENTA
+
+    const posiciones = [
+
+        [-1.15,4.0,0],
+        [1.15,4.0,.1],
+        [0,4.6,.4],
+        [-.45,4.7,-.6],
+        [.55,4.65,-.5]
+
+    ];
+
+
+    posiciones.forEach(
+        p=>{
+
+            const geo =
+                new THREE.SphereGeometry(
+                    1.45,
+                    8,
+                    6
+                );
+
+            const mat =
+                new THREE.MeshStandardMaterial({
+                    color:0xe2df9c,
+                    roughness:.95
+                });
+
+            const copa =
+                new THREE.Mesh(
+                    geo,
+                    mat
+                );
+
+            copa.position.set(
+                p[0],
+                p[1],
+                p[2]
+            );
+
+            copa.castShadow = true;
+
+            grupo.add(copa);
+        }
+    );
+
+
+    // MANCHAS VERDES
+
+    const manchas = [
+
+        [-1.35,4.35,.6,.42],
+        [-.8,4.85,-.65,.35],
+        [-.15,5.0,.7,.45],
+        [.45,4.35,.85,.38],
+        [1.2,4.55,-.3,.45],
+        [.8,4.9,-.7,.32],
+        [-.4,4.25,.9,.35],
+        [.1,4.55,-.9,.38],
+        [-1.05,3.75,-.55,.35]
+
+    ];
+
+
+    manchas.forEach(
+        p=>{
+
+            const geo =
+                new THREE.SphereGeometry(
+                    p[3],
+                    7,
+                    5
+                );
+
+            const mat =
+                new THREE.MeshStandardMaterial({
+                    color:0x729744,
+                    roughness:.9
+                });
+
+            const mancha =
+                new THREE.Mesh(
+                    geo,
+                    mat
+                );
+
+            mancha.position.set(
+                p[0],
+                p[1],
+                p[2]
+            );
+
+            grupo.add(mancha);
+        }
+    );
+
+}
+
+
+// ============================================================
+// ARAUCARIA
+// ============================================================
+
+function crearAraucaria(grupo){
+
+    const troncoGeo =
+        new THREE.CylinderGeometry(
+            .25,
+            .38,
+            8,
+            8
+        );
+
+    const troncoMat =
+        new THREE.MeshStandardMaterial({
+            color:0x6b5136,
+            roughness:.9
+        });
+
+    const tronco =
+        new THREE.Mesh(
+            troncoGeo,
+            troncoMat
+        );
+
+    tronco.position.y =
+        4;
+
+    tronco.castShadow = true;
+
+    grupo.add(tronco);
+
+
+    const niveles = [
+
+        [2.7,1.2,3.4],
+        [2.25,1.15,4.5],
+        [1.85,1.05,5.55],
+        [1.45,.95,6.5],
+        [1.05,.9,7.4],
+        [.7,1.0,8.35],
+        [.35,1.0,9.25]
+
+    ];
+
+
+    niveles.forEach(
+        (nivel,i)=>{
+
+            const geo =
+                new THREE.CylinderGeometry(
+                    .05,
+                    nivel[0],
+                    nivel[1],
+                    8
+                );
+
+            const mat =
+                new THREE.MeshStandardMaterial({
+                    color:
+                        i%2===0
+                        ? 0x3f7d3a
+                        : 0x4d8a42,
+                    roughness:.95
+                });
+
+            const rama =
+                new THREE.Mesh(
+                    geo,
+                    mat
+                );
+
+            rama.position.y =
+                nivel[2];
+
+            rama.castShadow = true;
+
+            grupo.add(rama);
+        }
+    );
+
+
+    // PUNTA
+
+    const puntaGeo =
+        new THREE.ConeGeometry(
+            .38,
+            1.7,
+            8
+        );
+
+    const puntaMat =
+        new THREE.MeshStandardMaterial({
+            color:0x3b7538,
+            roughness:.95
+        });
+
+    const punta =
+        new THREE.Mesh(
+            puntaGeo,
+            puntaMat
+        );
+
+    punta.position.y =
+        10.1;
+
+    punta.castShadow = true;
+
+    grupo.add(punta);
+
+}
+
+
+// ============================================================
+// FICUS VERDE
+// ============================================================
+
+function crearFicus(grupo){
+
+    const troncoGeo =
+        new THREE.CylinderGeometry(
+            .34,
+            .48,
+            4,
+            8
+        );
+
+    const troncoMat =
+        new THREE.MeshStandardMaterial({
+            color:0x765438,
+            roughness:.9
+        });
+
+    const tronco =
+        new THREE.Mesh(
+            troncoGeo,
+            troncoMat
+        );
+
+    tronco.position.y =
+        2;
+
+    tronco.castShadow = true;
+
+    grupo.add(tronco);
+
+
+    crearRama(
+        grupo,
+        -.7,
+        3.1,
+        0,
+        2.2,
+        .14,
+        0,
+        -.55
+    );
+
+    crearRama(
+        grupo,
+        .7,
+        3.2,
+        0,
+        2.2,
+        .14,
+        0,
+        .55
+    );
+
+    crearRama(
+        grupo,
+        0,
+        3.4,
+        .5,
+        1.8,
+        .12,
+        .4,
+        0
+    );
+
+
+    const posiciones = [
+
+        [-1.3,4.15,0],
+        [1.3,4.15,.1],
+        [0,4.75,.4],
+        [-.65,4.8,-.65],
+        [.7,4.7,-.55],
+        [0,4.25,-1]
+
+    ];
+
+
+    posiciones.forEach(
+        (p,i)=>{
+
+            const geo =
+                new THREE.SphereGeometry(
+                    1.45,
+                    8,
+                    6
+                );
+
+            const mat =
+                new THREE.MeshStandardMaterial({
+                    color:
+                        i%2===0
+                        ? 0x3f7d3a
+                        : 0x4d8a42,
+                    roughness:.95
+                });
+
+            const copa =
+                new THREE.Mesh(
+                    geo,
+                    mat
+                );
+
+            copa.position.set(
+                p[0],
+                p[1],
+                p[2]
+            );
+
+            copa.scale.set(
+                1.05,
+                .9,
+                1
+            );
+
+            copa.castShadow = true;
+
+            grupo.add(copa);
+        }
+    );
+
+}
+
+
+// ============================================================
+// FUNCIÓN PRINCIPAL PARA CREAR ÁRBOLES
+// ============================================================
+
+function crearArbol(opciones){
+
+    const {
+
+        nombre,
+        especie,
+        descripcion,
+        importancia,
+        beneficio,
+
+        x,
+        z,
+
+        escala = 1,
+
+        modelo = "ficus",
+
+        alturaInfo = "",
+        caracteristica = "",
+        dato = ""
+
+    } = opciones;
+
+
+    const grupo =
+        new THREE.Group();
+
+
+    grupo.position.set(
+        x,
+        0,
+        z
+    );
+
+
+    grupo.scale.set(
+        escala,
+        escala,
+        escala
+    );
+
+
+    // --------------------------------------------------------
+    // INFORMACIÓN
+    // --------------------------------------------------------
+
+    grupo.userData.nombre =
+        nombre;
+
+    grupo.userData.descripcion =
+        descripcion;
+
+    grupo.userData.tipo =
+        "Árbol";
+
+    grupo.userData.especie =
+        especie;
+
+    grupo.userData.importancia =
+        importancia;
+
+    grupo.userData.beneficio =
+        beneficio;
+
+    grupo.userData.alturaInfo =
+        alturaInfo;
+
+    grupo.userData.caracteristica =
+        caracteristica;
+
+    grupo.userData.dato =
+        dato;
+
+
+    // --------------------------------------------------------
+    // MODELO VISUAL
+    // --------------------------------------------------------
+
+    if(modelo === "guayabero"){
+
+        crearGuayabero(grupo);
+
+    }
+
+    else if(modelo === "eucalipto"){
+
+        crearEucalipto(grupo);
+
+    }
+
+    else if(modelo === "ficus-variegado"){
+
+        crearFicusVariegado(grupo);
+
+    }
+
+    else if(modelo === "araucaria"){
+
+        crearAraucaria(grupo);
+
+    }
+
+    else{
+
+        crearFicus(grupo);
+
+    }
+
+
+    scene.add(
+        grupo
+    );
+
+
+    arboles.push(
+        grupo
+    );
+
+
+    return grupo;
+}
+
+
+// ============================================================
+// ÁRBOLES SOLICITADOS
+// ============================================================
+
+
+// ============================================================
+// 1. GUAYABERO
+// ============================================================
+
+crearArbol({
+
+    nombre:
+        "Guayabero",
+
+    especie:
+        "Psidium guajava — Guayabo",
+
+    descripcion:
+        "Árbol frutal de copa amplia y redondeada, representado con follaje abundante y pequeños frutos de guayaba.",
+
+    importancia:
+        "Es una especie frutal que puede proporcionar alimento y refugio para diferentes organismos, además de aportar sombra y vegetación al entorno escolar.",
+
+    beneficio:
+        "Contribuye a la captura de CO₂, producción de oxígeno, regulación térmica y disponibilidad de frutos para fauna.",
+
+    alturaInfo:
+        "Aproximadamente 3–10 m.",
+
+    caracteristica:
+        "Copa redondeada, hojas verdes y frutos aromáticos.",
+
+    dato:
+        "La guayaba es un fruto comestible rico en vitamina C.",
+
+    x:-66,
+    z:-25,
+
+    escala:1.05,
+
+    modelo:"guayabero"
+
+});
+
+
+// ============================================================
+// 2. EUCALIPTO
+// ============================================================
+
+crearArbol({
+
+    nombre:
+        "Eucalipto",
+
+    especie:
+        "Eucalyptus spp. — Eucalipto",
+
+    descripcion:
+        "Árbol alto de tronco vertical y copa estrecha, representado con follaje verde grisáceo característico.",
+
+    importancia:
+        "Los eucaliptos son árboles de gran tamaño que pueden aportar sombra, captura de carbono y valor paisajístico.",
+
+    beneficio:
+        "Ayuda a capturar CO₂, producir oxígeno y generar sombra en áreas exteriores.",
+
+    alturaInfo:
+        "Puede superar los 20 m dependiendo de la especie.",
+
+    caracteristica:
+        "Tronco alto y follaje alargado de tono verde grisáceo.",
+
+    dato:
+        "El género Eucalyptus comprende numerosas especies adaptadas a diferentes ambientes.",
+
+    x:15,
+    z:-38,
+
+    escala:1,
+
+    modelo:"eucalipto"
+
+});
+
+
+// ============================================================
+// 3. FICUS VARIEGADO
+// ============================================================
+
+crearArbol({
+
+    nombre:
+        "Ficus variegado",
+
+    especie:
+        "Ficus benjamina variegado",
+
+    descripcion:
+        "Ficus ornamental representado con follaje de color amarillo claro y manchas verdes distribuidas por la copa.",
+
+    importancia:
+        "Es utilizado como árbol ornamental y puede aportar vegetación, sombra y valor paisajístico.",
+
+    beneficio:
+        "Contribuye a crear espacios verdes, proporciona sombra y ofrece refugio para pequeños organismos.",
+
+    alturaInfo:
+        "Aproximadamente 2–10 m, dependiendo del manejo.",
+
+    caracteristica:
+        "Hojas claras con zonas verdes y copa densa.",
+
+    dato:
+        "La variegación produce patrones de coloración diferentes en las hojas.",
+
+    x:15,
+    z:5,
+
+    escala:1.05,
+
+    modelo:"ficus-variegado"
+
+});
+
+
+// ============================================================
+// 4. ARAUCARIA
+// ============================================================
+
+crearArbol({
+
+    nombre:
+        "Araucaria",
+
+    especie:
+        "Araucaria heterophylla — Araucaria de Norfolk",
+
+    descripcion:
+        "Árbol ornamental alto con tronco vertical y ramas dispuestas en niveles, representado con una silueta de conífera.",
+
+    importancia:
+        "Es una especie ornamental de gran valor paisajístico y aporta estructura vertical a las áreas verdes.",
+
+    beneficio:
+        "Contribuye a la vegetación del entorno, captura CO₂ y proporciona refugio para pequeños organismos.",
+
+    alturaInfo:
+        "Puede alcanzar más de 20 m en condiciones adecuadas.",
+
+    caracteristica:
+        "Forma vertical, ramas en niveles y follaje verde permanente.",
+
+    dato:
+        "La disposición de sus ramas le da su característica apariencia simétrica.",
+
+    x:-66,
+    z:25,
+
+    escala:1.05,
+
+    modelo:"araucaria"
+
+});
+
+
+// ============================================================
+// 5. FICUS VERDE 01
+// ============================================================
+
+crearArbol({
+
+    nombre:
+        "Ficus verde 01",
+
+    especie:
+        "Ficus benjamina — Ficus",
+
+    descripcion:
+        "Ficus de follaje verde y copa densa ubicado junto a otros dos ejemplares en el área derecha del edificio E1.",
+
+    importancia:
+        "Los ficus ornamentales aportan vegetación y pueden generar zonas de sombra alrededor de los espacios construidos.",
+
+    beneficio:
+        "Proporciona sombra, captura CO₂ y contribuye al paisaje y biodiversidad del campus.",
+
+    alturaInfo:
+        "Aproximadamente 5–20 m si se desarrolla sin poda.",
+
+    caracteristica:
+        "Copa verde, densa y redondeada.",
+
+    dato:
+        "Los ficus pueden desarrollar copas muy densas cuando cuentan con suficiente espacio.",
+
+    x:7,
+    z:-18,
+
+    escala:.9,
+
+    modelo:"ficus"
+
+});
+
+
+// ============================================================
+// 6. FICUS VERDE 02
+// ============================================================
+
+crearArbol({
+
+    nombre:
+        "Ficus verde 02",
+
+    especie:
+        "Ficus benjamina — Ficus",
+
+    descripcion:
+        "Segundo ficus verde del grupo ubicado a la derecha del edificio E1.",
+
+    importancia:
+        "Forma parte del conjunto de vegetación que ayuda a integrar las construcciones con áreas verdes.",
+
+    beneficio:
+        "Aporta sombra, captura CO₂ y mejora visualmente el entorno escolar.",
+
+    alturaInfo:
+        "Aproximadamente 5–20 m si se desarrolla sin poda.",
+
+    caracteristica:
+        "Follaje verde abundante y copa amplia.",
+
+    dato:
+        "El ficus benjamina es una especie ornamental ampliamente utilizada en jardinería.",
+
+    x:9,
+    z:-14,
+
+    escala:.95,
+
+    modelo:"ficus"
+
+});
+
+
+// ============================================================
+// 7. FICUS VERDE 03
+// ============================================================
+
+crearArbol({
+
+    nombre:
+        "Ficus verde 03",
+
+    especie:
+        "Ficus benjamina — Ficus",
+
+    descripcion:
+        "Tercer ficus verde del grupo situado a la derecha del edificio E1, formando un conjunto cercano.",
+
+    importancia:
+        "La agrupación de árboles genera una zona verde más continua junto a la construcción.",
+
+    beneficio:
+        "Proporciona sombra, contribuye a la regulación térmica y favorece la presencia de pequeños organismos.",
+
+    alturaInfo:
+        "Aproximadamente 5–20 m si se desarrolla sin poda.",
+
+    caracteristica:
+        "Copa redondeada, densa y de color verde.",
+
+    dato:
+        "Su follaje permite crear una apariencia de árbol frondoso incluso cuando se mantiene mediante poda.",
+
+    x:7,
+    z:-10,
+
+    escala:.9,
+
+    modelo:"ficus"
+
+});
+
+
+// ============================================================
+// LÍMITES DEL TERRENO
+// ============================================================
+
+function crearBorde(
+    x,
+    z,
+    ancho,
+    fondo
+){
+
+    const geo =
+        new THREE.BoxGeometry(
+            ancho,
+            1.5,
+            fondo
+        );
+
+    const mat =
+        new THREE.MeshStandardMaterial({
+            color:0xbdbdbd
+        });
+
+    const obj =
+        new THREE.Mesh(
+            geo,
+            mat
+        );
+
+    obj.position.set(
+        x,
+        .75,
+        z
+    );
+
+    scene.add(obj);
+}
+
+
+crearBorde(
+    -27,
+    -47,
+    106,
+    .35
+);
+
+
+crearBorde(
+    -27,
+    57,
+    106,
+    .35
+);
+
+
+crearBorde(
+    -80,
+    5,
+    .35,
+    104
+);
+
+
+crearBorde(
+    26,
+    5,
+    .35,
+    104
+);
+
+
+// ============================================================
+// ETIQUETAS 3D
+// ============================================================
+
+function crearEtiqueta(
+    texto,
+    x,
+    y,
+    z
+){
+
+    const canvas =
+        document.createElement(
+            "canvas"
+        );
+
+    canvas.width = 512;
+    canvas.height = 128;
+
+    const ctx =
+        canvas.getContext("2d");
+
+    ctx.fillStyle =
+        "rgba(255,255,255,.92)";
+
+    ctx.roundRect(
+        5,
+        5,
+        502,
+        118,
+        18
+    );
+
+    ctx.fill();
+
+    ctx.fillStyle =
+        "#263238";
+
+    ctx.font =
+        "bold 42px Arial";
+
+    ctx.textAlign =
+        "center";
+
+    ctx.textBaseline =
+        "middle";
+
+    ctx.fillText(
+        texto,
+        256,
+        64
+    );
+
+
+    const texture =
+        new THREE.CanvasTexture(
+            canvas
+        );
+
+    const material =
+        new THREE.SpriteMaterial({
+            map:texture,
+            transparent:true
+        });
+
+    const sprite =
+        new THREE.Sprite(
+            material
+        );
+
+    sprite.position.set(
+        x,
+        y,
+        z
+    );
+
+    sprite.scale.set(
+    16,
+    4,
+    1
+);
+
+    scene.add(
+        sprite
+    );
+}
+
+
+crearEtiqueta(
+    "GIMNASIO",
+    -34,
+    11,
+    -32
+);
+
+crearEtiqueta(
+    "BIBLIOTECA",
+    -7,
+    8,
+    -32
+);
+
+crearEtiqueta(
+    "E1",
+    -8,
+    11,
+    -14
+);
+
+crearEtiqueta(
+    "EP",
+    -27,
+    11,
+    6
+);
+
+crearEtiqueta(
+    "AULA MAGNA",
+    -37,
+    9,
+    43
+);
+
+crearEtiqueta(
+    "PREFECTURA",
+    -10,
+    9,
+    43
+);
+
+crearEtiqueta(
+    "DIRECCIÓN",
+    -10,
+    15,
+    27
+);
+
+
+// ============================================================
+// INTERACCIÓN
+// ============================================================
+
+const raycaster =
+    new THREE.Raycaster();
+
+const mouse =
+    new THREE.Vector2();
+
+
+window.addEventListener(
+    "pointerdown",
+    function(event){
+
+        if(
+            event.target.tagName ===
+            "BUTTON"
+        ){
+            return;
+        }
+
+
+        mouse.x =
+            (event.clientX /
+            window.innerWidth) *
+            2 - 1;
+
+        mouse.y =
+            -(event.clientY /
+            window.innerHeight) *
+            2 + 1;
+
+
+        raycaster.setFromCamera(
+            mouse,
+            camera
+        );
+
+
+        // ====================================================
+        // OBJETOS INTERACTIVOS
+        // ====================================================
+
+        const objetos = [];
+
+
+        // EDIFICIOS
+
+        edificios.forEach(
+            edificio => {
+
+                edificio.traverse(
+                    objeto => {
+
+                        if(
+                            objeto.isMesh
+                        ){
+
+                            objetos.push(
+                                objeto
+                            );
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+        // ÁRBOLES
+
+        arboles.forEach(
+            arbol => {
+
+                arbol.traverse(
+                    objeto => {
+
+                        if(
+                            objeto.isMesh
+                        ){
+
+                            objetos.push(
+                                objeto
+                            );
+
+                        }
+
+                    }
+                );
+
+            }
+        );
+
+
+        const intersecciones =
+            raycaster.intersectObjects(
+                objetos
+            );
+
+
+        if(
+            intersecciones.length === 0
+        ){
+
+            return;
+
+        }
+
+
+        let objeto =
+            intersecciones[0].object;
+
+
+        // Buscar grupo padre interactivo
+
+        while(
+            objeto.parent &&
+            !objeto.userData.nombre
+        ){
+
+            objeto =
+                objeto.parent;
+
+        }
+
+
+        if(
+            !objeto.userData.nombre
+        ){
+
+            return;
+
+        }
+
+
+        // ====================================================
+        // MOSTRAR INFORMACIÓN
+        // ====================================================
+
+        document.getElementById(
+            "infoTitle"
+        ).textContent =
+            objeto.userData.nombre;
+
+
+        document.getElementById(
+            "infoText"
+        ).textContent =
+            objeto.userData.descripcion;
+
+
+        const tipo =
+            objeto.userData.tipo ||
+            "Elemento";
+
+
+        document.getElementById(
+            "infoType"
+        ).textContent =
+            tipo;
+
+
+        // ====================================================
+        // INFORMACIÓN DE ÁRBOLES
+        // ====================================================
+
+        const extra =
+            document.getElementById(
+                "infoExtra"
+            );
+
+
+        extra.innerHTML = "";
+
+
+        if(
+            objeto.userData.tipo ===
+            "Árbol"
+        ){
+
+            extra.innerHTML = `
+
+                <div class="treeInfographic">
+
+                    <div class="treeScientific">
+
+                        🌿 ${objeto.userData.especie}
+
+                    </div>
+
+
+                    <div class="treeGrid">
+
+                        <div class="treeCard">
+
+                            <b>📏 Altura</b>
+
+                            <span>
+                                ${objeto.userData.alturaInfo}
+                            </span>
+
+                        </div>
+
+
+                        <div class="treeCard">
+
+                            <b>🍃 Característica</b>
+
+                            <span>
+                                ${objeto.userData.caracteristica}
+                            </span>
+
+                        </div>
+
+
+                        <div class="treeCard">
+
+                            <b>🌎 Importancia</b>
+
+                            <span>
+                                ${objeto.userData.importancia}
+                            </span>
+
+                        </div>
+
+
+                        <div class="treeCard">
+
+                            <b>💧 Beneficio</b>
+
+                            <span>
+                                ${objeto.userData.beneficio}
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <h3>💡 Dato interesante</h3>
+
+                    <p>
+                        ${objeto.userData.dato}
+                    </p>
+
+                </div>
+
+            `;
+
+        }
+
+
+        // ====================================================
+        // MOSTRAR PANEL
+        // ====================================================
+
+        document.getElementById(
+            "information"
+        ).style.display =
+            "block";
+
+    }
+);
+
+
+// ============================================================
+// CERRAR PANEL
+// ============================================================
+
+window.cerrarInformacion =
+function(){
+
+    document.getElementById(
+        "information"
+    ).style.display =
+        "none";
+
+};
+
+
+// ============================================================
+// VISTA AÉREA
+// ============================================================
+
+window.vistaAerea =
+function(){
+
+    camera.position.set(
+        -20,
+        125,
+        10
+    );
+
+    controls.target.set(
+        -27,
+        0,
+        5
+    );
+
+    controls.update();
+
+};
+
+
+// ============================================================
+// VISTA 3D
+// ============================================================
+
+window.vistaFrontal =
+function(){
+
+    camera.position.set(
+        75,
+        65,
+        85
+    );
+
+    controls.target.set(
+        -27,
+        4,
+        5
+    );
+
+    controls.update();
+
+};
+
+
+// ============================================================
+// VISTA SUPERIOR
+// ============================================================
+
+window.vistaArriba =
+function(){
+
+    camera.position.set(
+        -27,
+        145,
+        5
+    );
+
+    controls.target.set(
+        -27,
+        0,
+        5
+    );
+
+    controls.update();
+
+};
+
+
+// ============================================================
+// RESIZE
+// ============================================================
+
+window.addEventListener(
+    "resize",
+    function(){
+
+        camera.aspect =
+            window.innerWidth /
+            window.innerHeight;
+
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+
+    }
+);
+
+
+// ============================================================
+// ANIMACIÓN
+// ============================================================
+
+function animar(){
+
+    requestAnimationFrame(
+        animar
+    );
+
+    controls.update();
+
+    renderer.render(
+        scene,
+        camera
+    );
+
+}
+
+
+// ============================================================
+// INICIAR
+// ============================================================
+
+setTimeout(
+    function(){
+
+        document.getElementById(
+            "loading"
+        ).style.display =
+            "none";
+
+    },
+    700
+);
+
+
+animar();
+
+</script>
+
+</body>
+</html>
